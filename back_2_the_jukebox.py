@@ -61,8 +61,20 @@ def load_playlists():
 
 def save_playlists(plist):
     try:
+        # Build a version of the playlists that only includes JSON-serializable track info.
+        serializable = {}
+        for playlist_name, playlist in plist.items():
+            serializable[playlist_name] = []
+            for track in playlist:
+                serializable[playlist_name].append({
+                    "path": track.get("path"),
+                    "title": track.get("title"),
+                    "artist": track.get("artist"),
+                    "album": track.get("album"),
+                    "duration": track.get("duration")
+                })
         with open(PLAYLISTS_FILE, "w") as f:
-            json.dump(plist, f)
+            json.dump(serializable, f)
     except Exception as e:
         print("Error saving playlists:", e)
 
@@ -356,6 +368,8 @@ class BackToTheJukebox(tk.Tk):
             for track in self.library:
                 if track["path"] == track_path:
                     self.current_playlist.append(track)
+                    # Auto-save the playlist after adding a new track.
+                    save_playlists(self.playlists_data)
                     messagebox.showinfo("Playlist", "Song added to current playlist.")
                     self.update_library_view()
                     return
@@ -367,6 +381,8 @@ class BackToTheJukebox(tk.Tk):
         for i, track in enumerate(self.current_playlist):
             if track["path"] == track_path:
                 del self.current_playlist[i]
+                # Auto-save the playlist after removal.
+                save_playlists(self.playlists_data)
                 messagebox.showinfo("Playlist", "Song removed from current playlist.")
                 self.update_library_view()
                 return
